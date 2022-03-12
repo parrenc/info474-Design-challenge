@@ -103,7 +103,7 @@ h1 {
   padding: 20px;
 }
 
-#my_dataviz {
+#my_dataviz1 {
     margin: 20px;
 }
 
@@ -115,4 +115,14 @@ h1 {
   min-width: 400px;
   text-align: left;
   color: white;
+}
+
+.my_dataviz1 .my_dataviz2 {
+  height: 500px;
+  width: 1000px;
+}
+
+
+.datavisBoth {
+  display:flex ;
 }
