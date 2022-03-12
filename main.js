@@ -112,7 +112,7 @@ d3.csv("KSEA-m.csv").then(function(data) {
   var mouseover = function(d) {
     tooltip
       .transition()
-      .duration(200)
+      .duration(400)
       .style("opacity", 1)
     tooltip
         .html("<span style='color:grey'>temperature is : </span>" + d.actual_mean_temp) // + d.Prior_disorder + "<br>" + "HR: " +  d.HR)
@@ -178,9 +178,11 @@ d3.csv("KSEA-m.csv").then(function(data) {
     .range([ height, 0 ])
     .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
     .padding(.3);
-  svg2.append("g")
+  /*svg2.append("g")
     .call(d3.axisLeft(y).tickSize(0))
-    .select(".domain").remove()
+    .select(".domain").remove() */
+
+
 
   // Show the X scale
   var x = d3.scaleLinear()
@@ -268,7 +270,7 @@ d3.csv("KSEA-m.csv").then(function(data) {
       var mouseleave = function(d) {
         tooltip2
           .transition()
-          .duration(200)
+          .duration(400)
           .style("opacity", 0)
       }
 
@@ -287,6 +289,8 @@ d3.csv("KSEA-m.csv").then(function(data) {
           .on("mouseover", mouseover)
           .on("mousemove", mousemove)
           .on("mouseleave", mouseleave)
+
+
 
 
 })
