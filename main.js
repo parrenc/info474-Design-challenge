@@ -1,170 +1,150 @@
-var svg = d3.select('svg');
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 50, left: 70},
+    width = 600 - margin.left - margin.right,
+    height = 1000 - margin.top - margin.bottom;
 
-// Get layout parameters
-var svgWidth = +svg.attr('width');
-var svgHeight = +svg.attr('height');
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
 
-var padding = {t: 40, r: 40, b: 40, l: 40};
-var cellPadding = 10;
+// Read the data and compute summary statistics for each specie
+d3.csv("KSEA-m.csv").then(function(data) {
+  // Compute quartiles, median, inter quantile range min and max --> these info are then used to draw the box.
+  var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
+    .key(function(d) {return d.month;})
+    .rollup(function(d) {
+      q1 = d3.quantile(d.map(function(g) { return g.actual_mean_temp;}).sort(d3.ascending),.25)
+      median = d3.quantile(d.map(function(g) { return g.actual_mean_temp;}).sort(d3.ascending),.5)
+      q3 = d3.quantile(d.map(function(g) { return g.actual_mean_temp;}).sort(d3.ascending),.75)
+      interQuantileRange = q3 - q1
+      min = q1 - 1.5 * interQuantileRange
+      max = q3 + 1.5 * interQuantileRange
+      return({q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max})
+    })
+    .entries(data)
 
-// Create a group element for appending chart elements
-var chartG = svg.append('g')
-    .attr('transform', 'translate('+[padding.l, padding.t]+')');
+  // Show the Y scale
+  var y = d3.scaleBand()
+    .range([ height, 0 ])
+    .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
+    .padding(.3);
+  svg.append("g")
+    .call(d3.axisLeft(y).tickSize(0))
+    .select(".domain").remove()
 
-var dataAttributes = ['economy (mpg)', 'cylinders', 'power (hp)', '0-60 mph (s)'];
-var N = dataAttributes.length;
-
-// Compute chart dimensions
-var cellWidth = (svgWidth - padding.l - padding.r) / N;
-var cellHeight = (svgHeight - padding.t - padding.b) / N;
-
-// Global x and y scales to be used for all SplomCells
-var xScale = d3.scaleLinear().range([0, cellWidth - cellPadding]);
-var yScale = d3.scaleLinear().range([cellHeight - cellPadding, 0]);
-// axes that are rendered already for you
-var xAxis = d3.axisTop(xScale).ticks(6).tickSize(-cellHeight * N, 0, 0);
-var yAxis = d3.axisLeft(yScale).ticks(6).tickSize(-cellWidth * N, 0, 0);
-// Ordinal color scale for cylinders color mapping
-var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-// Map for referencing min/max per each attribute
-var extentByAttribute = {};
-// Object for keeping state of which cell is currently being brushed
-var brushCell;
-
-// ****** Add reusable components here ****** //
-function SplomCell(x, y, col, row) {
-    this.x = x;
-    this.y = y;
-    this.col = col;
-    this.row = row;
-}
-
-
-d3.csv('cars.csv', dataPreprocessor).then(function(dataset) {
-
-        cars = dataset;
-
-        // Create map for each attribute's extent
-        dataAttributes.forEach(function(attribute){
-            extentByAttribute[attribute] = d3.extent(dataset, function(d){
-                return d[attribute];
-            });
-        });
-
-        // Pre-render gridlines and labels
-        chartG.selectAll('.x.axis')
-            .data(dataAttributes)
-            .enter()
-            .append('g')
-            .attr('class', 'x axis')
-            .attr('transform', function(d,i) {
-                return 'translate('+[(N - i - 1) * cellWidth + cellPadding / 2, 0]+')';
-            })
-            .each(function(attribute){
-                xScale.domain(extentByAttribute[attribute]);
-                d3.select(this).call(xAxis);
-                d3.select(this).append('text')
-                    .text(attribute)
-                    .attr('class', 'axis-label')
-                    .attr('transform', 'translate('+[cellWidth / 2, -20]+')');
-            });
-        chartG.selectAll('.y.axis')
-            .data(dataAttributes)
-            .enter()
-            .append('g')
-            .attr('class', 'y axis')
-            .attr('transform', function(d,i) {
-                return 'translate('+[0, i * cellHeight + cellPadding / 2]+')';
-            })
-            .each(function(attribute){
-                yScale.domain(extentByAttribute[attribute]);
-                d3.select(this).call(yAxis);
-                d3.select(this).append('text')
-                    .text(attribute)
-                    .attr('class', 'axis-label')
-                    .attr('transform', 'translate('+[-26, cellHeight / 2]+')rotate(270)');
-            });
+  // Show the X scale
+  var x = d3.scaleLinear()
+    .domain([10,80])
+    .range([0, width])
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).ticks(5))
+    .select(".domain").remove()
 
 
-        // ********* Your data dependent code goes here *********//
-        SplomCell.prototype.init = function(g) {
-            var cell = d3.select(g);
+  // Color scale
+  var myColor = d3.scaleSequential()
+    .interpolator(d3.interpolateInferno)
+    .domain([10,80])
 
-            cell.append('rect')
-              .attr('class', 'frame')
-              .attr('width', cellWidth - cellPadding)
-              .attr('height', cellHeight - cellPadding);
-        }
-
-        SplomCell.prototype.update = function(g, data) {
-            var cell = d3.select(g);
-
-            // Update the global x,yScale objects for this cell's x,y attribute domains
-            xScale.domain(extentByAttribute[this.x]);
-            yScale.domain(extentByAttribute[this.y]);
-
-            // Save a reference of this SplomCell, to use within anon function scopes
-            var _this = this;
-
-            var dots = cell.selectAll('.dot')
-                .data(data, function(d){
-                    return d.name +'-'+d.year+'-'+d.cylinders; // Create a unique id for the car
-                });
-
-            var dotsEnter = dots.enter()
-                .append('circle')
-                .attr('class', 'dot')
-                .style("fill", function(d) { return colorScale(d.cylinders); })
-                .attr('r', 4);
-
-            dots.merge(dotsEnter).attr('cx', function(d){
-                    return xScale(d[_this.x]);
-                })
-                .attr('cy', function(d){
-                    return yScale(d[_this.y]);
-                });
-
-            dots.exit().remove();
-        }
-        var cellEnter = chartG.selectAll('.cell')
-            .data(cells)
-            .enter()
-            .append('g')
-            .attr('class', 'cell')
-            .attr("transform", function(d) {
-                // Start from the far right for columns to get a better looking chart
-                var tx = (N - d.col - 1) * cellWidth + cellPadding / 2;
-                var ty = d.row * cellHeight + cellPadding / 2;
-                return "translate("+[tx, ty]+")";
-             });
-        cellEnter.each(function(cell){
-               cell.init(this);
-               cell.update(this, dataset);
-        });
+  // Add X axis label:
+  svg.append("text")
+      .attr("text-anchor", "end")
+      .attr("x", width)
+      .attr("y", height + margin.top + 30)
+      .text("temp");
 
 
-    });
+  // Show the main vertical line
+  svg
+    .selectAll("vertLines")
+    .data(sumstat)
+    .enter()
+    .append("line")
+      .attr("x1", function(d){return(x(d.value.min))})
+      .attr("x2", function(d){return(x(d.value.max))})
+      .attr("y1", function(d){return(y(d.key) + y.bandwidth()/2)})
+      .attr("y2", function(d){return(y(d.key) + y.bandwidth()/2)})
+      .attr("stroke", "black")
+      .style("width", 40)
 
-// ********* Your event listener functions go here *********//
-var cells = [];
-dataAttributes.forEach(function(attrX, col){
-    dataAttributes.forEach(function(attrY, row){
-        cells.push(new SplomCell(attrX, attrY, col, row));
-    });
-});
+  // rectangle for the main box
+  svg
+    .selectAll("boxes")
+    .data(sumstat)
+    .enter()
+    .append("rect")
+        .attr("x", function(d){return(x(d.value.q1))}) // console.log(x(d.value.q1)) ;
+        .attr("width", function(d){ return(x(d.value.q3)-x(d.value.q1))}) //console.log(x(d.value.q3)-x(d.value.q1))
+        .attr("y", function(d) { return y(d.key); })
+        .attr("height", y.bandwidth() )
+        .attr("stroke", "black")
+        .style("fill", "#69b3a2")
+        .style("opacity", 0.3)
+
+  // Show the median
+  svg
+    .selectAll("medianLines")
+    .data(sumstat)
+    .enter()
+    .append("line")
+      .attr("y1", function(d){return(y(d.key))})
+      .attr("y2", function(d){return(y(d.key) + y.bandwidth()/2)})
+      .attr("x1", function(d){return(x(d.value.median))})
+      .attr("x2", function(d){return(x(d.value.median))})
+      .attr("stroke", "black")
+      .style("width", 80)
 
 
-// Remember code outside of the data callback function will run before the data loads
+  // create a tooltip
+  var tooltip = d3.select("#my_dataviz")
+    .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("font-size", "16px")
+  // Three function that change the tooltip when user hover / move / leave a cell
+  var mouseover = function(d) {
+    tooltip
+      .transition()
+      .duration(200)
+      .style("opacity", 1)
+    tooltip
+        .html("<span style='color:grey'>temperature is : </span>" + d.actual_mean_temp) // + d.Prior_disorder + "<br>" + "HR: " +  d.HR)
+        .style("left", (d3.mouse(this)[0]+30) + "px")
+        .style("top", (d3.mouse(this)[1]+30) + "px")
+  }
+  var mousemove = function(d) {
+    tooltip
+      .style("left", (d3.mouse(this)[0]+30) + "px")
+      .style("top", (d3.mouse(this)[1]+30) + "px")
+  }
+  var mouseleave = function(d) {
+    tooltip
+      .transition()
+      .duration(200)
+      .style("opacity", 0)
+  }
 
-function dataPreprocessor(row) {
-    return {
-        'name': row['name'],
-        'economy (mpg)': +row['economy (mpg)'],
-        'cylinders': +row['cylinders'],
-        'displacement (cc)': +row['displacement (cc)'],
-        'power (hp)': +row['power (hp)'],
-        'weight (lb)': +row['weight (lb)'],
-        '0-60 mph (s)': +row['0-60 mph (s)'],
-        'year': +row['year']
-    };
-}
+  // Add individual points with jitter
+  var jitterWidth = 50
+  svg
+    .selectAll("indPoints")
+    .data(data)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d){ return(x(d.actual_mean_temp))})
+      .attr("cy", function(d){ return( y(d.month) + (y.bandwidth()/2) - jitterWidth/2 + Math.random()*jitterWidth )})
+      .attr("r", 4)
+      .style("fill", function(d){ return(myColor(+d.actual_mean_temp)) })
+      .attr("stroke", "black")
+      .on("mouseover", mouseover)
+      .on("mousemove", mousemove)
+      .on("mouseleave", mouseleave)
+
+
+})

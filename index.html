@@ -6,22 +6,23 @@
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <div id="main">
-        <svg width="700" height="700" style="border: 1px solid #777;">
-        </svg>
-    	<b>Color by:</b>
-        <select id="colorAttrSelector">
-	    	<option value="cylinders">cylinders</option>
-	    	<option value="economy (mpg)">economy (mpg)</option>
-	    	<option value="displacement (cc)">displacement (cc)</option>
-	    	<option value="power (hp)">power (hp)</option>
-	    	<option value="weight (lb)">weight (lb)</option>
-	    	<option value="0-60 mph (s)">0-60 mph (s)</option>
-	    	<option value="year">year</option>
-	    </select>  
+  <div>
+    <h1>Weather trends in different cities</h1>
+    <b id="intro">some text here;</b>
+  </div>
+    <div id="my_dataviz">
     </div>
+    <b>Color by:</b>
+      <select id="colorAttrSelector">
+        <option value="cylinders">Seattle, WA</option>
+        <!--
+        <option value="economy (mpg)">Houston, TX</option>
+        <option value="displacement (cc)">New York City, NY</option>
+      -->
+    </select>
 </body>
 <script src="//d3js.org/d3.v5.min.js"></script>
-<script src="./d3-tip.js"></script>
+<!--
+<script src="./d3-tip.js"></script> -->
 <script src="./main.js"></script>
 </html>
