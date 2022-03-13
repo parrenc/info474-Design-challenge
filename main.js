@@ -3,6 +3,7 @@ var margin = {top: 10, right: 30, bottom: 50, left: 70},
     width = 500 - margin.left - margin.right,
     height = 1000 - margin.top - margin.bottom;
 
+function update(i){
 // append the svg object to the body of the page
 var svg = d3.select("#my_dataviz2")
   .append("svg")
@@ -13,8 +14,42 @@ var svg = d3.select("#my_dataviz2")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
+  // Show the Y scale
+  var y = d3.scaleBand()
+    .range([ height, 0 ])
+    .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
+    .padding(.3);
+  svg.append("g")
+    .call(d3.axisLeft(y).tickSize(0))
+    .select(".domain").remove()
+
+  // Show the X scale
+  var x1 = d3.scaleLinear()
+    .domain([0,100])
+    .range([0, width])
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x1).ticks(5))
+    .select(".domain").remove()
+
+  // Add X axis label:
+  svg.append("text")
+      .attr("text-anchor", "end")
+      .attr("x", width)
+      .attr("y", height + margin.top + 30)
+      .text("temp");
+
 // Read the data and compute summary statistics for each specie
-d3.csv("KSEA-m.csv").then(function(data) {
+dataAll = d3.csv("K-m-all.csv").then(function(data) {
+  // Color scale
+  var myColor = d3.scaleSequential()
+    .interpolator(d3.interpolateInferno)
+    .domain([110,30])
+  var dataByCity = d3.nest()
+  .key(function(d) {return d.city;})
+  .entries(data)
+  curr = dataByCity[i].values
+
   // Compute quartiles, median, inter quantile range min and max --> these info are then used to draw the box.
   var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
     .key(function(d) {return d.month;})
@@ -27,39 +62,7 @@ d3.csv("KSEA-m.csv").then(function(data) {
       max = q3 + 1.5 * interQuantileRange
       return({q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max})
     })
-    .entries(data)
-
-  // Show the Y scale
-  var y = d3.scaleBand()
-    .range([ height, 0 ])
-    .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
-    .padding(.3);
-  svg.append("g")
-    .call(d3.axisLeft(y).tickSize(0))
-    .select(".domain").remove()
-
-  // Show the X scale
-  var x = d3.scaleLinear()
-    .domain([10,80])
-    .range([0, width])
-  svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).ticks(5))
-    .select(".domain").remove()
-
-
-  // Color scale
-  var myColor = d3.scaleSequential()
-    .interpolator(d3.interpolateInferno)
-    .domain([110,30])
-
-  // Add X axis label:
-  svg.append("text")
-      .attr("text-anchor", "end")
-      .attr("x", width)
-      .attr("y", height + margin.top + 30)
-      .text("temp");
-
+    .entries(curr)
 
   // Show the main vertical line
   svg
@@ -67,8 +70,8 @@ d3.csv("KSEA-m.csv").then(function(data) {
     .data(sumstat)
     .enter()
     .append("line")
-      .attr("x1", function(d){return(x(d.value.min))})
-      .attr("x2", function(d){return(x(d.value.max))})
+      .attr("x1", function(d){return(x1(d.value.min))})
+      .attr("x2", function(d){return(x1(d.value.max))})
       .attr("y1", function(d){return(y(d.key) + y.bandwidth()/2)})
       .attr("y2", function(d){return(y(d.key) + y.bandwidth()/2)})
       .attr("stroke", "black")
@@ -80,8 +83,8 @@ d3.csv("KSEA-m.csv").then(function(data) {
     .data(sumstat)
     .enter()
     .append("rect")
-        .attr("x", function(d){return(x(d.value.q1))}) // console.log(x(d.value.q1)) ;
-        .attr("width", function(d){ return(x(d.value.q3)-x(d.value.q1))}) //console.log(x(d.value.q3)-x(d.value.q1))
+        .attr("x", function(d){ return(x1(d.value.q1))}) // console.log(x(d.value.q1)) ;
+        .attr("width", function(d){return(x1(d.value.q3)-x1(d.value.q1))}) //console.log(x(d.value.q3)-x(d.value.q1))
         .attr("y", function(d) { return y(d.key); })
         .attr("height", y.bandwidth() )
         .attr("stroke", "black")
@@ -96,8 +99,8 @@ d3.csv("KSEA-m.csv").then(function(data) {
     .append("line")
       .attr("y1", function(d){return(y(d.key))})
       .attr("y2", function(d){return(y(d.key) + y.bandwidth()/2)})
-      .attr("x1", function(d){return(x(d.value.median))})
-      .attr("x2", function(d){return(x(d.value.median))})
+      .attr("x1", function(d){return(x1(d.value.median))})
+      .attr("x2", function(d){return(x1(d.value.median))})
       .attr("stroke", "black")
       .style("width", 80)
 
@@ -135,10 +138,10 @@ d3.csv("KSEA-m.csv").then(function(data) {
   var jitterWidth = 50
   svg
     .selectAll("indPoints")
-    .data(data)
+    .data(curr)
     .enter()
     .append("circle")
-      .attr("cx", function(d){ return(x(d.actual_mean_temp))})
+      .attr("cx", function(d){ return(x1(d.actual_mean_temp))})
       .attr("cy", function(d){ return( y(d.month) + (y.bandwidth()/2) - jitterWidth/2 + Math.random()*jitterWidth )})
       .attr("r", 4)
       .style("fill", function(d){ return(myColor(+d.actual_mean_temp)) })
@@ -158,7 +161,42 @@ var svg2 = d3.select("#my_dataviz1")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
-d3.csv("KSEA-m.csv").then(function(data) {
+  // Show the Y scale
+  var y = d3.scaleBand()
+    .range([ height, 0 ])
+    .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
+    .padding(.3);
+  /*svg2.append("g")
+    .call(d3.axisLeft(y).tickSize(0))
+    .select(".domain").remove() */
+
+  // Show the X scale
+  var x = d3.scaleLinear()
+    .domain([4,0])
+    .range([0, width])
+  svg2.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).ticks(5))
+    .select(".domain").remove()
+
+  // Add X axis label:
+  svg2.append("text")
+      .attr("text-anchor", "end")
+      .attr("x", width - 360)
+      .attr("y", height + margin.top + 30)
+      .text("precipitation");
+
+d3.csv("K-m-all.csv").then(function(data) {
+  // Color scale
+  var myColor = d3.scaleSequential()
+    .interpolator(d3.interpolateBlues)
+    .domain([0.2,1])
+
+  var dataByCity = d3.nest()
+  .key(function(d) {return d.city;})
+  .entries(data)
+  curr = dataByCity[i].values;
+
   // Compute quartiles, median, inter quantile range min and max --> these info are then used to draw the box.
   var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
     .key(function(d) {return d.month;})
@@ -169,42 +207,12 @@ d3.csv("KSEA-m.csv").then(function(data) {
       interQuantileRange = q3 - q1
       min = q1 - 1.5 * interQuantileRange
       max = q3 + 1.5 * interQuantileRange
-      return({q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max})
+      city = d[0].city
+      return({q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max, city: city})
     })
-    .entries(data)
+    .entries(curr)
 
-  // Show the Y scale
-  var y = d3.scaleBand()
-    .range([ height, 0 ])
-    .domain(["December","November", "October", "September", "August", "July", "June", "May", "April", "March", "February", "January"])
-    .padding(.3);
-  /*svg2.append("g")
-    .call(d3.axisLeft(y).tickSize(0))
-    .select(".domain").remove() */
-
-
-
-  // Show the X scale
-  var x = d3.scaleLinear()
-    .domain([2.5,0])
-    .range([0, width])
-  svg2.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).ticks(5))
-    .select(".domain").remove()
-
-  // Color scale
-  var myColor = d3.scaleSequential()
-    .interpolator(d3.interpolateBlues)
-    .domain([0.2,1])
-
-  // Add X axis label:
-  svg2.append("text")
-      .attr("text-anchor", "end")
-      .attr("x", width - 360)
-      .attr("y", height + margin.top + 30)
-      .text("precipitation");
-
+    //console.log(sumstat);
 
   // Show the main vertical line
   svg2
@@ -225,7 +233,7 @@ d3.csv("KSEA-m.csv").then(function(data) {
       .enter()
       .append("rect")
           .attr("x", function(d){return(x(d.value.q1) - (x(d.value.q1)-x(d.value.q3)))}) // console.log(x(d.value.q1)) ;
-          .attr("width", function(d){ return(x(d.value.q1)-x(d.value.q3))}) //console.log(x(d.value.q3)-x(d.value.q1))
+          .attr("width", function(d){return(x(d.value.q1)-x(d.value.q3))}) //console.log(x(d.value.q3)-x(d.value.q1))
           .attr("y", function(d) { return y(d.key); })
           .attr("height", y.bandwidth() )
           .attr("stroke", "black")
@@ -278,7 +286,7 @@ d3.csv("KSEA-m.csv").then(function(data) {
       var jitterWidth = 50
       svg2
         .selectAll("indPoints")
-        .data(data)
+        .data(curr)
         .enter()
         .append("circle")
           .attr("cx", function(d){ return(x(d.actual_precipitation))})
@@ -292,10 +300,18 @@ d3.csv("KSEA-m.csv").then(function(data) {
 
 
 
-
 })
 
 document.getElementById('my_dataviz1').setAttribute("style","width:500px");
 document.getElementById('my_dataviz2').setAttribute("style","width:500px");
 document.getElementById('datavisBoth').setAttribute("style","display:flex");
-document.getElementById('temp').setAttribute("style","padding-top:20px");
+if(document.getElementById('temp') != null) {
+  document.getElementById('temp').setAttribute("style","padding-top:20px");
+}
+svg.exit().remove();
+svg2.exit().remove();
+}
+
+update(0);
+//update(1);
+//update(2);
