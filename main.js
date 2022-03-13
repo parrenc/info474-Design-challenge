@@ -5,6 +5,15 @@ var margin = {top: 10, right: 30, bottom: 50, left: 70},
 
 function update(i){
 // append the svg object to the body of the page
+var div1 = document.getElementById("my_dataviz1");
+var div2 = document.getElementById("my_dataviz2");
+while(div1 != null && div1.firstChild != null) {
+  div1.removeChild(div1.firstChild);
+}
+while(div2 != null && div2.firstChild != null) {
+  div2.removeChild(div2.firstChild);
+}
+
 var svg = d3.select("#my_dataviz2")
   .append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -315,3 +324,18 @@ svg2.exit().remove();
 update(0);
 //update(1);
 //update(2);
+
+function display(selected) {
+  if (selected == "Seattle, WA"){
+    texttoshow = "Seattle, WA";
+  } else if (selected == "New York City, NY") {
+    texttoshow = "New York City, NY"
+  } else {
+    texttoshow = "Houston, TX";
+  }
+  var div = document.getElementById("visTitleDiv");
+  while(div != null && div.firstChild != null) {
+    div.removeChild(div.firstChild);
+  }
+ document.getElementById("visTitleDiv").innerHTML = "<h2 id=\"visTitle\">current city: " + texttoshow + "</h2>";
+}

@@ -2,13 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lab 7 - Cars</title>
+    <title>design3-ParrenC</title>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div>
+  <div id="topDiv">
     <h1>Weather trends in different cities</h1>
-    <b id="intro">some text here;</b>
+    <b id="arthor">by <bold>Parren Chen</bold>, INFO 474 WI22</b>
+    <div id="intro">
+    <h3>From the visualization, we could tell that in New York city, Seattle and Houston, there are generally more sunny days than rainy days. Houston generally have a higher temperature than the other 2 cities, while New York City is really cold in winter. Seattle is more of in betweem, which makes Seattle cooler (than Houston) in summer and warmer (than New York City) in winter.</h3>
+    <div id="visTitleDiv">
+    <h2 id="visTitle">current city: Seattle, WA</h2>
+  </div>
+  </div>
   </div>
   <div id="datavisBoth">
     <div id="my_dataviz1">
@@ -16,10 +22,12 @@
     <div id="my_dataviz2">
     </div>
   </div>
+  <div id="buttonDiv">
     <b>Color by:</b>
-    <button onclick="update(0)">Seattle, WA</button>
-    <button onclick="update(1)">New York City, NY</button>
-    <button onclick="update(2)">Houston, TX</button>
+    <button onclick="update(0);display(&quot;Seattle, WA&quot;)">Seattle, WA</button>
+    <button onclick="update(1);display(&quot;New York City, NY&quot;)">New York City, NY</button>
+    <button onclick="update(2);display(&quot;Houston, TX&quot;)">Houston, TX</button>
+  </div>
 </body>
 <script src="//d3js.org/d3.v5.min.js"></script>
 <!--

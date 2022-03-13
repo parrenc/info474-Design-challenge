@@ -126,3 +126,29 @@ h1 {
 .datavisBoth {
   display:flex ;
 }
+
+#arthor{
+  padding-left: 60px
+}
+
+#intro{
+  width: 1300px;
+  padding-bottom: 0px;
+}
+
+#buttonDiv{
+  padding-left: 60px;
+  padding-bottom: 60px;
+}
+
+#topDiv{
+  padding-bottom: 0px;
+}
+
+#visTitleDiv {
+  padding-left: 20px;
+}
+
+#visTitle {
+  font-size: 20pt;
+}
